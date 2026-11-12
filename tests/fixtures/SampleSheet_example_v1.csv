@@ -1,0 +1,22 @@
+[Header],,,,,,,,,
+Local Run Manager Analysis Id,XXXXXX,,,,,,,,
+Experiment Name,RUN_NAME,,,,,,,,
+Date,XX/XX/XXXX,,,,,,,,
+Module,GenerateFASTQ - 3.0.1,,,,,,,,
+Workflow,GenerateFASTQ,,,,,,,,
+Library Prep Kit,Illumina DNA Prep,,,,,,,,
+Index Kit,INDICES_KIT,,,,,,,,
+Chemistry,Amplicon,,,,,,,,
+,,,,,,,,,
+[Reads],,,,,,,,,
+151,,,,,,,,,
+151,,,,,,,,,
+,,,,,,,,,
+[Settings],,,,,,,,,
+adapter,XXXXXXXXXXXXXXXXXXX,,,,,,,,
+,,,,,,,,,
+[Data],,,,,,,,,
+Sample_ID,Sample_Name,Description,Index_Plate,Index_Plate_Well,I7_Index_ID,index,I5_Index_ID,index2,Sample_Project
+NEGMAXXXXCoV,NEGMAXXXXCoV,,B,A01,UDPXXXX,XXXXXXXXXX,UDPXXXX,XXXXXXXXXX,RUN_NAME
+SAMID1,SAMID1,,B,B01,UDPXXXX,XXXXXXXXXX,UDPXXXX,XXXXXXXXXX,RUN_NAME
+SAMIDI2,SAMID2,,B,C01,UDPXXXX,XXXXXXXXXX,UDPXXXX,XXXXXXXXXX,RUN_NAME

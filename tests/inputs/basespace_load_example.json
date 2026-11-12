@@ -1,0 +1,11 @@
+{
+  "basespace_load.basespace_run_id": "332775445",
+  "basespace_load.pathogen": "WNV",
+  "basespace_load.basespace_project": "MA26-12-WNV-20261110",
+  "basespace_load.access_token": "REPLACE_WITH_workspace.access_token",
+  "basespace_load.api_server": "https://api.basespace.illumina.com",
+  "basespace_load.terra_project": "REPLACE_WITH_BILLING_PROJECT",
+  "basespace_load.terra_workspace": "REPLACE_WITH_SCRATCH_WORKSPACE",
+  "basespace_load.table_name": "sample_test",
+  "basespace_load.write_to_table": true
+}
