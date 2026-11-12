@@ -18,8 +18,8 @@ the records to compare and send back.
    |---|---|
    | access_token | `workspace.access_token` |
    | api_server | `"https://api.basespace.illumina.com"` |
-   | terra_project | the workspace's billing project, in quotes |
-   | terra_workspace | the workspace's name, in quotes |
+   | terra_project | first part of the workspace URL, e.g. `"masphl-sequencing"` |
+   | terra_workspace | second part of the URL, with real spaces, e.g. `"Workflow DEV"` |
    | table_name | `"sample_test"` |
    | pathogen | change per test: `"SC2"`, `"MPXV"` or `"WNV"` |
    | basespace_project | per test (see note below) |

@@ -140,3 +140,50 @@ task make_read_rows {
     preemptible: 1
   }
 }
+
+task make_result_rows {
+  # One row per sample: first value is the sample ID, the rest match `columns`.
+  input {
+    String table_name = "sample"
+    Array[String] columns
+    Array[Array[String]] rows
+    # Leave out columns that are empty for every sample (e.g. flu- or HIV-only
+    # TheiaCoV outputs), the way Terra's own output mapping skips unset outputs.
+    Boolean drop_empty_columns = true
+    String out_name = "theiacov_results.tsv"
+    String docker = "python:3.12-slim"
+  }
+  command <<<
+    set -euo pipefail
+    python3 <<'PYEOF'
+    import csv, sys
+    with open("~{write_lines(columns)}") as fh:
+        columns = [line.rstrip("\n") for line in fh]
+    with open("~{write_tsv(rows)}", newline="") as fh:
+        rows = [r for r in csv.reader(fh, delimiter="\t", quoting=csv.QUOTE_NONE)]
+    bad = [r[0] for r in rows if len(r) != len(columns) + 1]
+    if bad:
+        sys.exit("ERROR: these rows have the wrong number of values (a value may contain a tab): "
+                 + ", ".join(bad))
+    keep = list(range(len(columns)))
+    if "~{drop_empty_columns}" == "true":
+        keep = [i for i in keep if any(r[i + 1] != "" for r in rows)]
+    with open("~{out_name}", "w", newline="") as fh:
+        w = csv.writer(fh, delimiter="\t", lineterminator="\n", quoting=csv.QUOTE_NONE, escapechar="\\")
+        w.writerow(["entity:~{table_name}_id"] + [columns[i] for i in keep])
+        for r in rows:
+            w.writerow([r[0]] + [r[i + 1] for i in keep])
+    print(f"{len(rows)} sample(s), {len(keep)} of {len(columns)} columns kept")
+    PYEOF
+  >>>
+  output {
+    File rows_tsv = "~{out_name}"
+  }
+  runtime {
+    docker: docker
+    memory: "1 GB"
+    cpu: 1
+    disks: "local-disk 10 SSD"
+    preemptible: 1
+  }
+}

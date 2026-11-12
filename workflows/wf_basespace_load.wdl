@@ -59,11 +59,32 @@ workflow basespace_load {
     String control_id_regex = "^(NEG|NTC)"
     Boolean allow_incomplete_run = false
     Boolean clear_old_columns_on_rerun = true
-    String loader_version = "phase1-dev"
+    String loader_version = "phase2-dev"
+    # Problems found by a calling workflow (e.g. missing MPXV clade I settings);
+    # reported together with the loader's own input checks.
+    Array[String] other_input_problems = []
+  }
+
+  # Seconds-long input check, so a missing BtB ID etc. fails before BaseSpace is touched
+  call basespace.check_run_and_samples as check_inputs {
+    input:
+      validate_only = true,
+      other_input_problems = other_input_problems,
+      pathogen = pathogen,
+      basespace_run_id = basespace_run_id,
+      btb_batch_id = btb_batch_id,
+      basespace_project = basespace_project,
+      only_these_samples = only_these_samples,
+      extra_negative_control_ids = extra_negative_control_ids,
+      control_id_regex = control_id_regex,
+      sample_set_name = sample_set_name,
+      table_name = table_name,
+      loader_version = loader_version
   }
 
   call basespace.get_basespace_run_info {
     input:
+      wait_for = check_inputs.check_summary,
       basespace_run_id = basespace_run_id,
       api_server = api_server,
       access_token = access_token

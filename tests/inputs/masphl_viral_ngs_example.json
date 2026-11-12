@@ -1,0 +1,19 @@
+{
+  "masphl_viral_ngs.basespace_run_id": "332775445",
+  "masphl_viral_ngs.pathogen": "MPXV",
+  "masphl_viral_ngs.basespace_project": "MA26-15-Mpox-20261111",
+  "masphl_viral_ngs.access_token": "REPLACE_WITH_workspace.access_token",
+  "masphl_viral_ngs.api_server": "https://api.basespace.illumina.com",
+  "masphl_viral_ngs.terra_project": "masphl-sequencing",
+  "masphl_viral_ngs.terra_workspace": "Workflow DEV",
+  "masphl_viral_ngs.table_name": "sample_test",
+  "masphl_viral_ngs.organism": "MPXV",
+  "masphl_viral_ngs.reference_genome": "REPLACE_WITH_workspace.MPXV_yale_ref_MT903345",
+  "masphl_viral_ngs.primer_bed": "REPLACE_WITH_workspace.MPXV_yale_primer_bed",
+  "masphl_viral_ngs.nextclade_dataset_name": "nextstrain/mpox/all-clades",
+  "masphl_viral_ngs.nextclade_dataset_tag": "2026-07-07--14-07-11Z",
+  "masphl_viral_ngs.mpxv_clade_i_reference_genome": "REPLACE_WITH_workspace.NC_003310-1_CladeI_Yale_reference",
+  "masphl_viral_ngs.mpxv_clade_i_primer_bed": "REPLACE_WITH_workspace.NC_003310-1_CladeI_Yale_bed_v1",
+  "masphl_viral_ngs.mpxv_clade_i_nextclade_dataset_name": "nextstrain/mpox/clade-i",
+  "masphl_viral_ngs.mpxv_clade_i_nextclade_dataset_tag": "2026-07-07--14-07-11Z"
+}

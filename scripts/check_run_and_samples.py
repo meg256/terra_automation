@@ -37,7 +37,7 @@ import re
 import sys
 from collections import OrderedDict
 
-SCRIPT_VERSION = "0.1.0"
+SCRIPT_VERSION = "0.2.0"
 
 PATHOGENS = ("SC2", "MPXV", "WNV")
 LANE_RE = re.compile(r"_L(\d{1,3})$")
@@ -208,7 +208,7 @@ def parse_samplesheet(path):
 # --------------------------------------------------------------------------
 
 def validate_inputs(opts):
-    reasons = []
+    reasons = list(opts.get("other_input_problems", []))
     if opts["pathogen"] not in PATHOGENS:
         reasons.append(f"pathogen must be one of {', '.join(PATHOGENS)} (got '{opts['pathogen']}').")
     if not RUN_ID_RE.match(opts["run_id"] or ""):
@@ -593,13 +593,33 @@ def build_opts(a):
         "sample_set_name": (a.sample_set_name or "").strip(),
         "table_name": a.table_name,
         "loader_version": a.loader_version,
+        "other_input_problems": read_problems(a.problems_file),
     }
+
+
+def read_problems(path):
+    """Extra input problems found by the calling workflow (one per line)."""
+    if not path or not os.path.exists(path):
+        return []
+    with open(path) as fh:
+        return [line.strip() for line in fh if line.strip()]
+
+
+def write_empty_outputs(out_dir):
+    """validate-only mode: create the files the WDL task expects, empty."""
+    for name in ("sample_rows.tsv", "membership.tsv", "to_fetch.tsv", "check_report.tsv",
+                 "sample_set_name.txt"):
+        open(os.path.join(out_dir, name), "w").close()
 
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    p.add_argument("--snapshot-dir", required=True)
+    p.add_argument("--snapshot-dir", default="")
     p.add_argument("--out-dir", required=True)
+    p.add_argument("--validate-only", action="store_true",
+                   help="only check the inputs (no BaseSpace snapshot needed)")
+    p.add_argument("--problems-file", default="",
+                   help="file of extra input problems found by the workflow, one per line")
     p.add_argument("--pathogen", required=True)
     p.add_argument("--run-id", required=True)
     p.add_argument("--btb-batch-id", default="")
@@ -616,6 +636,13 @@ def main(argv=None):
     try:
         opts = build_opts(a)
         validate_inputs(opts)
+        if a.validate_only:
+            os.makedirs(a.out_dir, exist_ok=True)
+            write_empty_outputs(a.out_dir)
+            with open(os.path.join(a.out_dir, "check_summary.txt"), "w") as fh:
+                fh.write("Inputs OK.\n")
+            sys.stdout.write("Inputs OK.\n")
+            return 0
         run = load_run(os.path.join(a.snapshot_dir, "run.json"))
         datasets = load_datasets(os.path.join(a.snapshot_dir, "datasets.csv"))
         counts = load_read_counts(os.path.join(a.snapshot_dir, "attributes"),
