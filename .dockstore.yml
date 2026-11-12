@@ -1,0 +1,7 @@
+version: 1.2
+workflows:
+  - name: MASPHL_BaseSpace_Load
+    subclass: WDL
+    primaryDescriptorPath: /workflows/wf_basespace_load.wdl
+    testParameterFiles:
+      - /tests/inputs/basespace_load_example.json
