@@ -3,8 +3,7 @@ version 1.0
 # =============================================================================
 # MASPHL viral NGS end-to-end workflow (SC2 / MPXV / WNV)
 # -----------------------------------------------------------------------------
-# Phase 2: load from BaseSpace + analyze with TheiaCoV. (Phase 3 adds QC
-# PASS/FAIL and the result/LIMS files.)
+# Load from BaseSpace, analyze with TheiaCoV, QC PASS/FAIL, result files.
 #
 # Launch in Terra with "Run workflow with inputs defined by file paths".
 #
@@ -16,6 +15,10 @@ version 1.0
 #                           Nextclade dataset; the rerun's results are kept
 #   4. write_results        every TheiaCoV output -> a data table column, same
 #                           names as Terra's default output mapping
+#   5. qc_and_reports       assembly_status PASS/FAIL (+ masphl_id for MPXV), run
+#                           summary with contamination check; MPXV/WNV results TSV;
+#                           SC2 run_results.csv + lims_file.csv (replaces SPHL LIMS
+#                           prep/gen v1.1.0). Links go on the sample set row.
 #
 # Extra TheiaCoV settings (anything not listed in the inputs below) can still be
 # set in Terra's Inputs tab under the task name "theiacov_illumina_pe" (and
@@ -24,6 +27,7 @@ version 1.0
 
 import "wf_basespace_load.wdl" as loader
 import "../tasks/task_terra_table.wdl" as terra_table
+import "../tasks/task_qc_reports.wdl" as qc_reports
 # TheiaCoV_Illumina_PE_PHB v4.0.0 (Theiagen, Public Health Bioinformatics), unmodified.
 import "https://raw.githubusercontent.com/theiagen/public_health_bioinformatics/v4.0.0/workflows/theiacov/wf_theiacov_illumina_pe.wdl" as phb_theiacov
 
@@ -36,7 +40,6 @@ workflow masphl_viral_ngs {
     btb_batch_id: "SC2 only: 5-digit BtB batch ID."
     only_these_samples: "Optional. Comma-separated sample IDs to load instead of the whole project. Controls are not added automatically."
     extra_negative_control_ids: "Optional. Comma-separated IDs of controls whose names don't start with NEG or NTC."
-    organism: "TheiaCoV organism: sars-cov-2 (SC2), MPXV or WNV."
     mpxv_clade_i_reference_genome: "MPXV workspace: reference used to rerun clade I samples."
   }
 
@@ -56,7 +59,7 @@ workflow masphl_viral_ngs {
     String terra_workspace
 
     # ---- workspace defaults: TheiaCoV (same values as today's TheiaCoV config)
-    String organism
+    # (organism is set from pathogen: SC2 -> sars-cov-2, MPXV, WNV)
     File? reference_genome
     File? primer_bed
     File? reference_gff
@@ -81,26 +84,35 @@ workflow masphl_viral_ngs {
     String control_id_regex = "^(NEG|NTC)"
     Boolean allow_incomplete_run = false
     Boolean clear_old_columns_on_rerun = true
-    String masphl_workflow_version = "phase2-dev"
+    # ---- QC (defaults match the SOPs and the validated SPHL LIMS prep code) ---
+    Float? min_percent_reference_coverage   # default SC2 90, MPXV/WNV 80
+    Float min_meanmapq = 20                 # PASS at >= this
+    Float min_meanbaseq = 20                # PASS at >= this
+    Int control_max_unambiguous_bases = 600 # negative control contaminated at >= this
+    String masphl_id_prefix = "MPXV_USA_"   # MPXV: masphl_id = prefix + run year + _ + sample ID
+
+    String masphl_workflow_version = "phase3-dev"
   }
 
+  String organism = if pathogen == "SC2" then "sars-cov-2" else pathogen
+
   # ---- configuration problems, reported by the loader's quick input check ---
-  Boolean organism_ok =
-    if pathogen == "SC2" then (organism == "sars-cov-2" || organism == "SARS-CoV-2")
-    else if pathogen == "MPXV" then (organism == "MPXV" || organism == "mpox" || organism == "Mpox" ||
-                                     organism == "monkeypox" || organism == "Monkeypox virus")
-    else if pathogen == "WNV" then (organism == "WNV" || organism == "wnv" || organism == "West Nile virus")
-    else true   # an unknown pathogen is reported by the loader itself
   Boolean is_mpxv = pathogen == "MPXV"
+  String main_bed = select_first([primer_bed, "none"])
+  String clade_i_bed = select_first([mpxv_clade_i_primer_bed, "none-i"])
+  String main_ref = select_first([reference_genome, "none"])
+  String clade_i_ref = select_first([mpxv_clade_i_reference_genome, "none-i"])
   Array[String] config_problems = flatten([
-    if organism_ok then [] else
-      ["organism '" + organism + "' does not match pathogen '" + pathogen + "'. Check the workspace defaults."],
     if is_mpxv && !defined(nextclade_dataset_name) then
       ["nextclade_dataset_name must be set for MPXV (e.g. nextstrain/mpox/all-clades); without it TheiaCoV uses a dataset that never reports clade I."] else [],
     if is_mpxv && !defined(mpxv_clade_i_reference_genome) then
       ["mpxv_clade_i_reference_genome must be set for MPXV runs (used to rerun clade I samples)."] else [],
     if is_mpxv && !defined(mpxv_clade_i_primer_bed) then
-      ["mpxv_clade_i_primer_bed must be set for MPXV runs (used to rerun clade I samples)."] else []
+      ["mpxv_clade_i_primer_bed must be set for MPXV runs (used to rerun clade I samples)."] else [],
+    if is_mpxv && main_bed == clade_i_bed then
+      ["primer_bed and mpxv_clade_i_primer_bed are the same file. primer_bed must match reference_genome (the all-clades / clade II reference)."] else [],
+    if is_mpxv && main_ref == clade_i_ref then
+      ["reference_genome and mpxv_clade_i_reference_genome are the same file. reference_genome must be the all-clades / clade II reference."] else []
   ])
 
   # ===========================================================================
@@ -595,6 +607,26 @@ workflow masphl_viral_ngs {
       rows = result_row
   }
 
+  # ===========================================================================
+  # 5. QC + result files
+  # ===========================================================================
+  call qc_reports.qc_and_reports {
+    input:
+      loader_rows = load.sample_rows,
+      theiacov_results = make_result_rows.rows_tsv,
+      check_summary = load.check_summary,
+      replaced_rows = load.replaced_rows,
+      pathogen = pathogen,
+      file_prefix = load.sample_set,
+      min_percent_reference_coverage = min_percent_reference_coverage,
+      min_meanmapq = min_meanmapq,
+      min_meanbaseq = min_meanbaseq,
+      control_max_unambiguous_bases = control_max_unambiguous_bases,
+      masphl_id_prefix = masphl_id_prefix,
+      table_name = table_name,
+      version = masphl_workflow_version
+  }
+
   if (write_to_table) {
     call terra_table.update_terra_table as write_results {
       input:
@@ -604,6 +636,32 @@ workflow masphl_viral_ngs {
         rows_tsv = make_result_rows.rows_tsv,
         check_previous_run = false,
         wait_for = load.read_paths_update_log    # after the loader's writes
+    }
+    call terra_table.update_terra_table as write_qc {
+      input:
+        terra_project = terra_project,
+        terra_workspace = terra_workspace,
+        table_name = table_name,
+        rows_tsv = qc_and_reports.qc_rows,
+        check_previous_run = false,
+        wait_for = write_results.update_log
+    }
+    call terra_table.make_set_row {
+      input:
+        table_name = table_name,
+        set_name = load.sample_set,
+        run_summary = qc_and_reports.run_summary,
+        report_files = qc_and_reports.report_files,
+        contamination_alert = qc_and_reports.contamination_alert
+    }
+    call terra_table.update_terra_table as write_set_row {
+      input:
+        terra_project = terra_project,
+        terra_workspace = terra_workspace,
+        table_name = table_name + "_set",
+        rows_tsv = make_set_row.set_row_tsv,
+        check_previous_run = false,
+        wait_for = write_qc.update_log
     }
   }
 
@@ -618,5 +676,10 @@ workflow masphl_viral_ngs {
     Array[String] analysis_routes = analysis_route
     File theiacov_results = make_result_rows.rows_tsv
     File? results_update_log = write_results.update_log
+    # QC + result files
+    File run_summary = qc_and_reports.run_summary
+    Array[File] result_files = qc_and_reports.report_files
+    Boolean contamination_alert = qc_and_reports.contamination_alert
+    File? set_update_log = write_set_row.update_log
   }
 }

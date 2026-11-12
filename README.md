@@ -6,8 +6,8 @@ Labs import one workflow, `MASPHL_Viral_NGS`; each phase adds to it.
 | Phase | What it adds | Status |
 |---|---|---|
 | 1 | Load: check run, register samples, fetch reads (`wf_basespace_load.wdl`) | tested on SC2/MPXV/WNV runs |
-| 2 | TheiaCoV v4.0.0 per sample (imported unmodified, pinned by tag) + MPXV clade I rerun; results to the data table | **ready for testing** |
-| 3 | QC PASS/FAIL + reports (replaces SPHL LIMS prep/gen for SC2; reports for MPXV/WNV) | planned |
+| 2 | TheiaCoV v4.0.0 per sample (imported unmodified, pinned by tag) + MPXV clade I rerun; results to the data table | in testing |
+| 3 | QC PASS/FAIL, run summary with contamination check, MPXV/WNV results TSV, SC2 run_results + lims_file (replaces SPHL LIMS prep/gen v1.1.0) | **ready for testing** |
 
 Mercury (GISAID/GenBank prep) is out of scope; run the validated standalone
 Mercury workflows afterwards as today.
@@ -19,19 +19,21 @@ Mercury workflows afterwards as today.
 workflows/wf_masphl_viral_ngs.wdl  the end-to-end workflow (import this one)
 workflows/wf_basespace_load.wdl    loading step (sub-workflow; also launchable alone)
 tasks/task_basespace.wdl           get_basespace_run_info, check_run_and_samples, fetch_basespace_reads
-tasks/task_terra_table.wdl         update_terra_table, make_read_rows, make_result_rows
+tasks/task_terra_table.wdl         update_terra_table, make_read_rows, make_result_rows, make_set_row
+tasks/task_qc_reports.wdl          qc_and_reports
 scripts/check_run_and_samples.py   the loader's decision logic (source of truth)
+scripts/qc_and_reports.py          QC rule + result files (source of truth)
 config/theiacov_v4.0.0_outputs.tsv TheiaCoV v4.0.0 output list (drives the table columns)
 tools/embed_scripts.py             copies scripts/ into the WDL tasks
 tools/gen_theiacov_outputs.py      writes the TheiaCoV-output -> table-column WDL
 tests/                             simulated runs and checks (pytest) + example inputs
-docs/phase1_testing.md, docs/phase2_testing.md   checklists for testing on real runs
+docs/phase1_testing.md ... phase3_testing.md     checklists for testing on real runs
 ```
 
 ## Editing the Python logic
 
 The tasks use plain public images, so the script travels inside the WDL.
-Edit `scripts/check_run_and_samples.py`, then:
+Edit the files in `scripts/`, then:
 
 ```
 python tools/embed_scripts.py          # refresh the copy inside tasks/task_basespace.wdl
@@ -53,7 +55,7 @@ miniwdl check workflows/wf_masphl_viral_ngs.wdl
 | Task | Image | Needs |
 |---|---|---|
 | get_basespace_run_info, fetch_basespace_reads | `us-docker.pkg.dev/general-theiagen/theiagen/basespace_cli:1.2.1` | `bs`, bash, gzip, tar |
-| check_run_and_samples, make_read_rows, make_result_rows | `python:3.12-slim` | python3 (standard library only) |
+| check_run_and_samples, qc_and_reports, make_read_rows, make_result_rows, make_set_row | `python:3.12-slim` | python3 (standard library only) |
 | update_terra_table | `python:3.12-slim` + `firecloud==0.16.41` installed at run time | python3, internet access to PyPI |
 
 Each image is a task input (`docker`), so it can be swapped without code changes.

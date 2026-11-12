@@ -156,6 +156,7 @@ workflow basespace_load {
   output {
     File check_summary = check_run_and_samples.check_summary
     File check_report = check_run_and_samples.check_report
+    File sample_rows = check_run_and_samples.sample_rows_tsv
     String sample_set = check_run_and_samples.sample_set
     File basespace_snapshot = get_basespace_run_info.snapshot
     String basespace_cli_version = get_basespace_run_info.bs_cli_version

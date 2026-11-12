@@ -7,7 +7,6 @@
   "masphl_viral_ngs.terra_project": "masphl-sequencing",
   "masphl_viral_ngs.terra_workspace": "Workflow DEV",
   "masphl_viral_ngs.table_name": "sample_test",
-  "masphl_viral_ngs.organism": "MPXV",
   "masphl_viral_ngs.reference_genome": "REPLACE_WITH_workspace.MPXV_yale_ref_MT903345",
   "masphl_viral_ngs.primer_bed": "REPLACE_WITH_workspace.MPXV_yale_primer_bed",
   "masphl_viral_ngs.nextclade_dataset_name": "nextstrain/mpox/all-clades",

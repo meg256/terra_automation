@@ -187,3 +187,47 @@ task make_result_rows {
     preemptible: 1
   }
 }
+
+task make_set_row {
+  # Sample-set row with links to the run's result files.
+  input {
+    String table_name = "sample"
+    String set_name
+    String run_summary
+    Array[String] report_files
+    Boolean contamination_alert
+    String docker = "python:3.12-slim"
+  }
+  command <<<
+    set -euo pipefail
+    python3 <<'PYEOF'
+    import csv
+    with open("~{write_lines(report_files)}") as fh:
+        files = [l.strip() for l in fh if l.strip()]
+    cols = {"run_summary": "~{run_summary}",
+            "contamination_alert": "~{true='yes' false='no' contamination_alert}"}
+    for f in files:
+        if f.endswith(".lims_file.csv"):
+            cols["btb_lims_file"] = f          # same names as SPHL LIMS gen outputs
+        elif f.endswith(".run_results.csv"):
+            cols["run_results_file"] = f
+        else:
+            cols["run_report"] = f
+    with open("set_row.tsv", "w", newline="") as fh:
+        w = csv.writer(fh, delimiter="\t", lineterminator="\n")
+        w.writerow(["entity:~{table_name}_set_id"] + list(cols))
+        w.writerow(["~{set_name}"] + list(cols.values()))
+    print(open("set_row.tsv").read())
+    PYEOF
+  >>>
+  output {
+    File set_row_tsv = "set_row.tsv"
+  }
+  runtime {
+    docker: docker
+    memory: "1 GB"
+    cpu: 1
+    disks: "local-disk 10 SSD"
+    preemptible: 1
+  }
+}

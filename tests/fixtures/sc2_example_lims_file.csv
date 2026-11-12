@@ -1,0 +1,7 @@
+sample_id,assembly_status,tool_lineage,lineage_to_maven,pango_version,organism,test
+NEGMA0001,FAIL,INVALID,INVALID,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing
+25MA1000,PASS,XFG.2,XFG.2,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing
+25MA1001,PASS,XFG.2,XFG.2,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing
+25MA1002,PASS,XFG.3.4.3,XFG.3.4.3,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing
+25MA1003,FAIL,INVALID,INVALID,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing
+NTC,FAIL,INVALID,INVALID,pangolin 4.3.1; PUSHER-v1.35,SARS-CoV 2,SARS-CoV-2 Sequencing

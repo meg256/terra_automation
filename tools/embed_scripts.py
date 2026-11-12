@@ -19,7 +19,7 @@ import re
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-WDL_FILES = ["tasks/task_basespace.wdl"]
+WDL_FILES = ["tasks/task_basespace.wdl", "tasks/task_qc_reports.wdl"]
 BEGIN_RE = re.compile(r"^(?P<indent>[ \t]*)# BEGIN EMBEDDED (?P<path>scripts/\S+\.py)\b.*$")
 FORBIDDEN = ["~{", ">>>"]   # would break a WDL heredoc command block
 

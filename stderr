@@ -1,2 +1,0 @@
-CHECK FAILED -- nothing was loaded.
-  - btb_batch_id is required for SC2 runs (the 5-digit BtB batch ID).

@@ -1,0 +1,5 @@
+entity:sample_test_id	sample_sheet_id	batchid	pathogen	basespace_run_id	basespace_run_name	basespace_run_date	basespace_project	negative_control	load_status	basespace_reads_pf	basespace_read_pairs_fetched
+MA0271	MA0271	MA26-32-Mpox-20260911	MPXV	330739437	MA26-32-Mpox-20260911	2026-09-11	MA26-32-Mpox-20260911	no	loaded	298514	149257
+MA0272	MA0272	MA26-32-Mpox-20260911	MPXV	330739437	MA26-32-Mpox-20260911	2026-09-11	MA26-32-Mpox-20260911	no	loaded	396872	198436
+MA0273	MA0273	MA26-32-Mpox-20260911	MPXV	330739437	MA26-32-Mpox-20260911	2026-09-11	MA26-32-Mpox-20260911	no	loaded	159886	79943
+NTCMA2632	NTCMA2632	MA26-32-Mpox-20260911	MPXV	330739437	MA26-32-Mpox-20260911	2026-09-11	MA26-32-Mpox-20260911	yes	loaded	6846444	3423222
