@@ -1,5 +1,10 @@
 version: 1.2
 workflows:
+  - name: MASPHL_Viral_NGS
+    subclass: WDL
+    primaryDescriptorPath: /workflows/wf_masphl_viral_ngs.wdl
+    testParameterFiles:
+      - /tests/inputs/masphl_viral_ngs_example.json
   - name: MASPHL_BaseSpace_Load
     subclass: WDL
     primaryDescriptorPath: /workflows/wf_basespace_load.wdl
