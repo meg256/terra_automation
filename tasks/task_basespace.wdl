@@ -72,11 +72,21 @@ task get_basespace_run_info {
     done
 
     # ---- sample sheet (optional cross-check) -------------------------------
-    if ! bs download run -i '~{basespace_run_id}' -o snapshot/run_files \
-         --exclude '*' --include '*SampleSheet*.csv' > samplesheet_download.log 2>&1; then
+    # --extension=csv works on old CLI versions (Theiagen's image has bs 1.2.1,
+    # which has no --include/--exclude). Only the run's small .csv files come down.
+    # The log and the CLI's own help are kept in the snapshot for troubleshooting.
+    mkdir -p snapshot/logs
+    bs download run --help > snapshot/logs/bs_download_run_help.txt 2>&1 || true
+    if bs download run -i '~{basespace_run_id}' -o snapshot/run_files --extension=csv \
+         > snapshot/logs/samplesheet_download.log 2>&1; then
+      echo "Run .csv files downloaded: $(find snapshot/run_files -type f -name '*.csv' | wc -l)"
+      find snapshot/run_files -type f -iname 'samplesheet*.csv' | sed 's/^/  sample sheet: /'
+    else
       echo "WARNING: could not download the run's sample sheet; the cross-check will be skipped."
-      cat samplesheet_download.log
+      cat snapshot/logs/samplesheet_download.log
     fi
+    # keep only sample sheets (other run csvs are not needed downstream)
+    find snapshot/run_files -type f ! -iname 'samplesheet*.csv' -delete 2>/dev/null || true
 
     tar czf basespace_snapshot.tar.gz snapshot
   >>>
