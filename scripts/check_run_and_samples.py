@@ -37,7 +37,7 @@ import re
 import sys
 from collections import OrderedDict
 
-SCRIPT_VERSION = "0.2.0"
+SCRIPT_VERSION = "0.2.1"
 
 PATHOGENS = ("SC2", "MPXV", "WNV")
 LANE_RE = re.compile(r"_L(\d{1,3})$")
@@ -239,13 +239,22 @@ def validate_inputs(opts):
         raise CheckFailed(reasons)
 
 
+# FASTQ dataset types seen in BaseSpace: illumina.fastq.v1.8 (Local Run Manager /
+# FASTQ Generation) and common.fastq (BCL Convert). common.files etc. are skipped.
+FASTQ_TYPE_PREFIXES = ("illumina.fastq", "common.fastq")
+
+
+def is_fastq_type(dtype):
+    return (dtype or "").strip().lower().startswith(FASTQ_TYPE_PREFIXES)
+
+
 def group_datasets(datasets):
     """Group FASTQ datasets into samples: same project + same name once lane
     suffixes are removed and '_'/'-' are treated alike."""
     groups = OrderedDict()
     skipped = []
     for d in datasets:
-        if not d["type"].lower().startswith("illumina.fastq"):
+        if not is_fastq_type(d["type"]):
             continue
         if d["name"].lower().startswith("undetermined"):
             skipped.append(dict(d, status="undetermined", note="Undetermined reads; never loaded."))
@@ -299,9 +308,15 @@ def run_check(run, datasets, sheet_rows, read_counts, opts):
 
     groups, skipped = group_datasets(datasets)
     if not groups:
+        types = {}
+        for d in datasets:
+            types[d["type"] or "(blank)"] = types.get(d["type"] or "(blank)", 0) + 1
+        seen = ", ".join(f"{t} x{n}" for t, n in sorted(types.items())) or "none"
         raise CheckFailed(failures + [
-            f"No FASTQ datasets found in run {opts['run_id']}. Has FASTQ generation finished, and "
-            f"can this BaseSpace token see the run's projects?"
+            f"No FASTQ datasets found in run {opts['run_id']}. BaseSpace listed {len(datasets)} "
+            f"dataset(s) of type(s): {seen}. Accepted FASTQ types start with: "
+            f"{', '.join(FASTQ_TYPE_PREFIXES)}. If FASTQ generation has finished, check that this "
+            f"BaseSpace token can see the run's projects."
         ])
     projects_in_run = sorted({g["project"] for g in groups.values()})
 

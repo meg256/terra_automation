@@ -351,3 +351,29 @@ def test_embedded_copy_in_wdl_matches_script():
     sys.path.insert(0, os.path.join(HERE, "..", "tools"))
     import embed_scripts
     assert embed_scripts.check(), "Embedded script is stale: run python tools/embed_scripts.py"
+
+
+def test_bcl_convert_common_fastq_type(tmp_path):
+    """Run 335865530: BCL Convert writes FASTQs as common.fastq, plus common.files folders."""
+    data = [ds("MA0278", "MA26-38-Mpox", "ds.1", dtype="common.fastq"),
+            ds("MA2638MpoxNTC", "MA26-38-Mpox", "ds.2", reads=50, dtype="common.fastq"),
+            ds("CM26-1123", "MA26-38-WNV", "ds.3", dtype="common.fastq"),
+            ds("MA0278 (BCL Convert)", "MA26-38-WNV-Mpox-20261113_335865530", "ds.4", dtype="common.files"),
+            ds("BCL Convert Logs", "MA26-38-WNV-Mpox-20261113_335865530", "ds.5", dtype="common.files")]
+    code, out, _s = run(tmp_path, make_snapshot(tmp_path, data), project="MA26-38-Mpox", pathogen="MPXV",
+                        extra_negative_control_ids="MA2638MpoxNTC")
+    assert code == 0
+    r = {x["entity:sample_id"]: x for x in rows(out / "sample_rows.tsv")}
+    assert set(r) == {"MA0278", "MA2638MpoxNTC"}
+    assert r["MA2638MpoxNTC"]["negative_control"] == "yes"
+    t2 = tmp_path / "second"
+    t2.mkdir()
+    code, out, _s = run(t2, make_snapshot(t2, data), pathogen="MPXV",
+                        only_these_samples="MA0278, MA2638MpoxNTC", extra_negative_control_ids="MA2638MpoxNTC")
+    assert code == 0 and fetch(out) == [["MA0278", "ds.1"], ["MA2638MpoxNTC", "ds.2"]]
+
+
+def test_no_fastq_message_lists_types(tmp_path):
+    data = [ds("X (BCL Convert)", "P", "ds.1", dtype="common.files")]
+    code, _o, summary = run(tmp_path, make_snapshot(tmp_path, data), project="P")
+    assert code == 1 and "common.files x1" in summary
